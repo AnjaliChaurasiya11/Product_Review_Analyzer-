@@ -268,18 +268,38 @@ with st.sidebar:
 
     st.markdown("<div class='custom-divider'></div>", unsafe_allow_html=True)
 
-    with st.expander("➕ Add New Product"):
-        with st.form("add_product_form", clear_on_submit=True):
-            new_prod_name = st.text_input("Product Name")
-            new_prod_emoji = st.text_input("Emoji (e.g. 📸)", "📦")
-            new_prod_review = st.text_area("Initial Review")
-            if st.form_submit_button("Create Product", use_container_width=True):
-                if new_prod_name and new_prod_name not in st.session_state.reviews_data:
-                    st.session_state.reviews_data[new_prod_name] = [new_prod_review] if new_prod_review else []
-                    st.session_state.product_meta[new_prod_name] = {"emoji": new_prod_emoji, "category": "New"}
-                    save_data(st.session_state.product_meta, st.session_state.reviews_data)
-                    st.session_state["target_product"] = new_prod_name
-                    st.rerun()
+    with st.expander("➕ Submit a Review"):
+        action_type = st.radio("Choose Action", ["Add review to existing product", "Create a new product"])
+        
+        if action_type == "Add review to existing product":
+            with st.form("add_review_existing_form", clear_on_submit=True):
+                # Ensure we have products before allowing selection
+                if product_list:
+                    existing_prod = st.selectbox("Select Product", list(product_options.keys()))
+                    review_text = st.text_area("Review Details")
+                    if st.form_submit_button("Submit Review", use_container_width=True):
+                        if review_text.strip():
+                            target_name = product_options[existing_prod]
+                            st.session_state.reviews_data[target_name].append(review_text)
+                            save_data(st.session_state.product_meta, st.session_state.reviews_data)
+                            st.session_state["target_product"] = target_name
+                            st.rerun()
+                else:
+                    st.info("No products exist yet. Please create a new product first.")
+                    st.form_submit_button("Submit Review", disabled=True, use_container_width=True)
+                    
+        else:
+            with st.form("add_review_new_form", clear_on_submit=True):
+                new_prod_name = st.text_input("New Product Name")
+                new_prod_emoji = st.text_input("Emoji (e.g. 📸)", "📦")
+                new_prod_review = st.text_area("Initial Review")
+                if st.form_submit_button("Create Product", use_container_width=True):
+                    if new_prod_name and new_prod_name not in st.session_state.reviews_data:
+                        st.session_state.reviews_data[new_prod_name] = [new_prod_review] if new_prod_review.strip() else []
+                        st.session_state.product_meta[new_prod_name] = {"emoji": new_prod_emoji, "category": "New"}
+                        save_data(st.session_state.product_meta, st.session_state.reviews_data)
+                        st.session_state["target_product"] = new_prod_name
+                        st.rerun()
 
     if selected_product_name:
         with st.expander("🛠️ Manage Current Product"):
